@@ -3,10 +3,21 @@ import { Response } from "express";
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const { validationResult } = require("express-validator");
+const {
+  registerValidator,
+  loginValidator,
+} = require("../middleware/validator");
 const jwt_secret = process.env.JWT_SECRET;
 
 const register = async (req: typeof User, res: Response) => {
+  await Promise.all(
+    registerValidator.map((validation: any) => validation.run(req))
+  );
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const newUser = new User({
@@ -22,6 +33,13 @@ const register = async (req: typeof User, res: Response) => {
 };
 
 const login = async (req: typeof User, res: Response) => {
+  await Promise.all(
+    loginValidator.map((validation: any) => validation.run(req))
+  );
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const user = await User.findOne({ email: req.body.email });
     !user && res.status(404).json("User not found!");

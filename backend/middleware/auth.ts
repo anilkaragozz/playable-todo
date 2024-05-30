@@ -10,20 +10,18 @@ const authVerification = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.headers["Authorization"].split(" ")[1];
-    let decodedData;
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (token) {
-      decodedData = jwt.verify(token, jwt_secret);
-      req.userId = decodedData?.id;
-    } else {
-      decodedData = jwt.decode(token);
-      req.userId = decodedData?.sub;
+    if (!token) {
+      throw new Error();
     }
+
+    const decodedData = jwt.verify(token, jwt_secret);
+    req.userId = decodedData?.id;
 
     next();
   } catch (error) {
-    res.status(500).json("Invalid token");
+    res.status(401).json("Unauthorized: Invalid token");
   }
 };
 
