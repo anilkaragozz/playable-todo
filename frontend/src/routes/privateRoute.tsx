@@ -15,7 +15,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({
     } else {
       redirect("/todo");
     }
-  }, []);
+  }, [token]);
 
   return <>{children}</>;
 };
