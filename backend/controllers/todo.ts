@@ -77,7 +77,7 @@ const getTodos = async (req: typeof Todo, res: Response) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const { page = 1, limit = 7, search = "", tags = "" } = req.query;
+    const { page = 1, limit = 50, search = "", tags = "" } = req.query;
     const query = {
       $and: [
         search ? { $text: { $search: search.toString() } } : {},
@@ -100,8 +100,40 @@ const getTodos = async (req: typeof Todo, res: Response) => {
     };
 
     const pagiatedTodo = await Todo.paginate(query, paginateOptions);
-    const todos = await Todo.find();
-    res.status(200).json({ pagiatedTodo, todos });
+    res.status(200).json(pagiatedTodo);
+  } catch (error) {
+    res.status(400).json(error);
+  }
+};
+
+const getTodosByKey = async (req: typeof Todo, res: Response) => {
+  await Promise.all(
+    getTodosValidator.map((validation: any) => validation.run(req))
+  );
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  try {
+    const { search = "", tags = "" } = req.query;
+    const query = {
+      $and: [
+        search ? { $text: { $search: search.toString() } } : {},
+        tags
+          ? {
+              tags: {
+                $in: tags
+                  .toString()
+                  .split(",")
+                  .map((tag: string) => tag.trim()),
+              },
+            }
+          : {},
+      ],
+    };
+
+    const filteredTodo = await Todo.find(query);
+    res.status(200).json(filteredTodo);
   } catch (error) {
     res.status(400).json(error);
   }
@@ -156,6 +188,7 @@ module.exports = {
   uploadTodoImage,
   uploadTodoAttachments,
   getTodos,
+  getTodosByKey,
   updateTodo,
   deleteTodo,
 };
